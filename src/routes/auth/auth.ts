@@ -6,6 +6,7 @@ import { supabase } from "../../index.js";
 import { sign } from "hono/jwt";
 import { setCookie } from "hono/cookie";
 import bcrypt from "bcrypt";
+import { authMiddleware } from "../../middleware/auth-middleware.js";
 
 type Variables = {
   user: TUser;
@@ -26,7 +27,7 @@ auth.post("/register", zValidator("json", registerSchema), async (c) => {
 
     if (userExistsError) {
       return c.json(
-        { success: false, error: { message: "Internal server error! 1" } },
+        { success: false, error: { message: "Internal server error!" } },
         500
       );
     }
@@ -51,7 +52,7 @@ auth.post("/register", zValidator("json", registerSchema), async (c) => {
 
     if (insertedUserError) {
       return c.json(
-        { success: false, error: { message: "Internal server error 2!" } },
+        { success: false, error: { message: "Internal server error!" } },
         500
       );
     }
@@ -79,12 +80,12 @@ auth.post("/register", zValidator("json", registerSchema), async (c) => {
   } catch (error) {
     if (!(error instanceof Error)) {
       return c.json(
-        { success: false, error: { message: "Internal server error 3!" } },
+        { success: false, error: { message: "Internal server error!" } },
         500
       );
     }
 
-    return c.json({ success: false, error: { message: error.message } }, 400);
+    return c.json({ success: false, error: { message: error.message } }, 500);
   }
 });
 
@@ -142,7 +143,51 @@ auth.post("/login", zValidator("json", loginSchema), async (c) => {
       );
     }
 
-    return c.json({ success: false, error: { message: error.message } }, 400);
+    return c.json({ success: false, error: { message: error.message } }, 500);
+  }
+});
+
+auth.get("/me", authMiddleware, async (c) => {
+  try {
+    const payload = c.get("user");
+
+    if (!payload) {
+      return c.json({ success: false, message: "Unauthorized!" }, 401);
+    }
+
+    return c.json({ success: true, data: { user: payload } }, 200);
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      return c.json(
+        { success: false, error: { message: "Internal server error!" } },
+        500
+      );
+    }
+
+    return c.json({ success: false, error: { message: error.message } }, 500);
+  }
+});
+
+auth.post("/logout", authMiddleware, async (c) => {
+  try {
+    setCookie(c, "access_token", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "None",
+      domain: "localhost",
+      maxAge: 0,
+    });
+
+    return c.json({ success: true, message: "Logged out successfully!" }, 200);
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      return c.json(
+        { success: false, error: { message: "Internal server error!" } },
+        500
+      );
+    }
+
+    return c.json({ success: false, error: { message: error.message } }, 500);
   }
 });
 
