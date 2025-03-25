@@ -33,7 +33,10 @@ auth.post("/register", zValidator("json", registerSchema), async (c) => {
     }
 
     if (userExists.length > 0) {
-      return c.json({ success: false, message: "User already exists" }, 400);
+      return c.json(
+        { success: false, error: { message: "User already exists" } },
+        400
+      );
     }
 
     const bcryptHash = await bcrypt.hash(password, 14);
@@ -107,13 +110,19 @@ auth.post("/login", zValidator("json", loginSchema), async (c) => {
     }
 
     if (!user) {
-      return c.json({ success: false, message: "Invalid credentials!" }, 404);
+      return c.json(
+        { success: false, error: { message: "Invalid credentials!" } },
+        404
+      );
     }
 
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
-      return c.json({ success: false, message: "Invalid password!" }, 404);
+      return c.json(
+        { success: false, error: { message: "Invalid password!" } },
+        404
+      );
     }
 
     delete user.password;
@@ -152,7 +161,10 @@ auth.get("/me", authMiddleware, async (c) => {
     const payload = c.get("user");
 
     if (!payload) {
-      return c.json({ success: false, message: "Unauthorized!" }, 401);
+      return c.json(
+        { success: false, error: { message: "Unauthorized!" } },
+        401
+      );
     }
 
     return c.json({ success: true, data: { user: payload } }, 200);
