@@ -4,6 +4,7 @@ import { Hono } from "hono";
 import "dotenv/config";
 import auth from "./routes/auth/auth.js";
 import { cors } from "hono/cors";
+import blizzard from "./routes/blizzard/blizzard.js";
 
 const app = new Hono();
 
@@ -26,6 +27,7 @@ serve({
 });
 
 app.route("/api/v1", auth);
+app.route("/api/v1", blizzard);
 
 app.get("/healthcheck", (c) => {
   return c.json({ status: "ok" }, 200);
