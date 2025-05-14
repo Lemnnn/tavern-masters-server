@@ -53,4 +53,74 @@ comps.post(
   }
 );
 
+comps.get("/my-comps", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+
+    const { data, error } = await supabase
+      .from("comps")
+      .select("*")
+      .eq("created_by", user.id);
+
+    if (error) {
+      console.error(error);
+      return c.json(
+        { success: false, error: { message: "Failed to get your comps" } },
+        500
+      );
+    }
+
+    return c.json({ success: true, comps: data }, 200);
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      return c.json(
+        { success: false, error: { message: "Internal server error!" } },
+        500
+      );
+    }
+
+    return c.json({ success: false, error: { message: error.message } }, 500);
+  }
+});
+
+comps.get("/:id", authMiddleware, async (c) => {
+  try {
+    const user = c.get("user");
+    const id = c.req.param("id");
+
+    const { data, error } = await supabase
+      .from("comps")
+      .select("*")
+      .eq("id", id)
+      .eq("created_by", user.id)
+      .single();
+
+    if (error) {
+      console.error(error);
+      return c.json(
+        { success: false, error: { message: "Failed to get comp" } },
+        500
+      );
+    }
+
+    if (!data) {
+      return c.json(
+        { success: false, error: { message: "Comp not found" } },
+        404
+      );
+    }
+
+    return c.json({ success: true, comp: data }, 200);
+  } catch (error) {
+    if (!(error instanceof Error)) {
+      return c.json(
+        { success: false, error: { message: "Internal server error!" } },
+        500
+      );
+    }
+
+    return c.json({ success: false, error: { message: error.message } }, 500);
+  }
+});
+
 export default comps;
